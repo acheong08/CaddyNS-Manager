@@ -4,8 +4,6 @@ type User struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
 	Domain   string `json:"domain"`
-	// Comma separated list of Caddy instances to call
-	CaddyInstances string `json:"caddy_instances"`
 }
 
 type limitBy int

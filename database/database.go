@@ -12,8 +12,7 @@ const (
 		CREATE TABLE IF NOT EXISTS users (
 			username TEXT PRIMARY KEY,
 			password TEXT NOT NULL,
-			domain TEXT NOT NULL,
-			caddy_instances TEXT NOT NULL,
+			domain TEXT NOT NULL
 		)
 	`
 	createServiceTable = `
@@ -30,11 +29,11 @@ const (
 	`
 )
 
-type Database struct {
+type database struct {
 	db *sqlx.DB
 }
 
-func NewDatabase() (*Database, error) {
+func newDatabase() (*database, error) {
 	db, err := sqlx.Open("sqlite", "nameserver.db")
 	if err != nil {
 		return nil, err
@@ -50,14 +49,14 @@ func NewDatabase() (*Database, error) {
 		return nil, err
 	}
 
-	return &Database{db}, nil
+	return &database{db}, nil
 }
 
-func (d *Database) Close() error {
+func (d *database) Close() error {
 	return d.db.Close()
 }
 
-func (d *Database) NewUser(user models.User) error {
+func (d *database) NewUser(user models.User) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return err
@@ -67,14 +66,14 @@ func (d *Database) NewUser(user models.User) error {
 	if err != nil {
 		return err
 	}
-	_, err = tx.Exec("INSERT INTO users (username, password, domain, caddy_instances) VALUES (?, ?, ?, ?)", user.Username, string(hashed), user.Domain, user.CaddyInstances)
+	_, err = tx.Exec("INSERT INTO users (username, password, domain) VALUES (?, ?, ?, ?)", user.Username, string(hashed), user.Domain)
 	if err != nil {
 		return err
 	}
 	return tx.Commit()
 }
 
-func (d *Database) UserLogin(username, password string) error {
+func (d *database) UserLogin(username, password string) error {
 	var hashed string
 	err := d.db.QueryRow("SELECT password FROM users WHERE username = ?", username).Scan(&hashed)
 	if err != nil {
@@ -83,13 +82,19 @@ func (d *Database) UserLogin(username, password string) error {
 	return bcrypt.CompareHashAndPassword([]byte(hashed), []byte(password))
 }
 
-func (d *Database) GetUser(username string) (models.User, error) {
+func (d *database) GetUser(username string) (models.User, error) {
 	var user models.User
-	err := d.db.QueryRowx("SELECT username, domain, caddy_instances FROM users WHERE username = ?", username).StructScan(&user)
+	err := d.db.QueryRowx("SELECT username, domain FROM users WHERE username = ?", username).StructScan(&user)
 	return user, err
 }
 
-func (d *Database) NewService(service models.ServiceEntry) error {
+func (d *database) GetDomainOwner(domain string) (models.User, error) {
+	var user models.User
+	err := d.db.QueryRowx("SELECT username, domain FROM users WHERE domain = ?", domain).StructScan(&user)
+	return user, err
+}
+
+func (d *database) NewService(service models.ServiceEntry) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return err
@@ -101,19 +106,19 @@ func (d *Database) NewService(service models.ServiceEntry) error {
 	return tx.Commit()
 }
 
-func (d *Database) GetService(owner, subdomain string) (models.ServiceEntry, error) {
+func (d *database) GetService(owner, subdomain string) (models.ServiceEntry, error) {
 	var service models.ServiceEntry
 	err := d.db.QueryRowx("SELECT * FROM services WHERE owner = ? AND subdomain = ?", owner, subdomain).StructScan(&service)
 	return service, err
 }
 
-func (d *Database) GetServices(owner string) ([]models.ServiceEntry, error) {
+func (d *database) GetServices(owner string) ([]models.ServiceEntry, error) {
 	var services []models.ServiceEntry
 	err := d.db.Select(&services, "SELECT * FROM services WHERE owner = ?", owner)
 	return services, err
 }
 
-func (d *Database) DeleteService(owner, subdomain string) error {
+func (d *database) DeleteService(owner, subdomain string) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return err
@@ -125,7 +130,7 @@ func (d *Database) DeleteService(owner, subdomain string) error {
 	return tx.Commit()
 }
 
-func (d *Database) UpdateService(service models.ServiceEntry) error {
+func (d *database) UpdateService(service models.ServiceEntry) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return err
