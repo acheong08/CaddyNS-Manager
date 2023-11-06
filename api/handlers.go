@@ -57,7 +57,7 @@ func Login(c *gin.Context) {
 		return
 	}
 	// Get storage from context
-	storage := c.MustGet("storage").(database.Storage)
+	storage := c.MustGet("storage").(*database.Storage)
 	err := storage.UserLogin(username, password)
 	if err != nil {
 		c.JSON(401, gin.H{"error": err.Error()})
@@ -83,7 +83,7 @@ func Login(c *gin.Context) {
 }
 
 func ServiceEntry(c *gin.Context) {
-	storage := c.MustGet("storage").(database.Storage)
+	storage := c.MustGet("storage").(*database.Storage)
 	owner := c.MustGet("user").(models.User)
 
 	if c.Request.Method == "GET" {
@@ -116,18 +116,37 @@ func ServiceEntry(c *gin.Context) {
 	config.Owner = owner.Username
 
 	var err error
+	var message string
 
 	switch c.Request.Method {
 	case "POST":
+		if !config.IsValidFOrPost() {
+			c.JSON(400, gin.H{"error": "Invalid service entry"})
+			return
+		}
 		// Add service entry to storage
 		err = storage.NewService(config)
+		message = "Service entry added"
 
 	case "DELETE":
+		if config.Subdomain == "" {
+			c.JSON(400, gin.H{"error": "Subdomain required"})
+			return
+		}
 		// Remove service entry from storage
 		err = storage.DeleteService(owner.Username, config.Subdomain)
+		// Clear cache
+		storage.ClearCache()
+		message = "Service entry removed"
 
 	case "PATCH":
+		if !config.IsValidFOrPost() {
+			c.JSON(400, gin.H{"error": "Invalid service entry"})
+			return
+		}
 		err = storage.UpdateService(config)
+		storage.ClearCache()
+		message = "Service entry updated"
 
 	default:
 		c.JSON(405, gin.H{"error": "Method not allowed"})
@@ -138,6 +157,6 @@ func ServiceEntry(c *gin.Context) {
 		c.JSON(500, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(200, gin.H{"success": "Service entry removed"})
+	c.JSON(200, gin.H{"success": message})
 	return
 }

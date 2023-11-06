@@ -1,6 +1,8 @@
 package database
 
 import (
+	"log"
+
 	"github.com/acheong08/nameserver/models"
 	sqlx "github.com/acheong08/squealx"
 	_ "github.com/glebarez/sqlite"
@@ -58,15 +60,24 @@ func (d *database) Close() error {
 
 func (d *database) NewUser(user models.User) error {
 	tx, err := d.db.Begin()
+
 	if err != nil {
 		return err
 	}
+	defer func() {
+		if err != nil {
+			log.Printf("Rolling back transaction due to %s\n", err.Error())
+			tx.Rollback()
+		} else {
+			tx.Commit()
+		}
+	}()
 	// Hash password using bcrypt
 	hashed, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return err
 	}
-	_, err = tx.Exec("INSERT INTO users (username, password, domain) VALUES (?, ?, ?, ?)", user.Username, string(hashed), user.Domain)
+	_, err = tx.Exec("INSERT INTO users (username, password, domain) VALUES (?, ?, ?)", user.Username, string(hashed), user.Domain)
 	if err != nil {
 		return err
 	}
@@ -99,6 +110,14 @@ func (d *database) NewService(service models.ServiceEntry) error {
 	if err != nil {
 		return err
 	}
+	defer func() {
+		if err != nil {
+			log.Printf("Rolling back transaction due to %s\n", err.Error())
+			tx.Rollback()
+		} else {
+			tx.Commit()
+		}
+	}()
 	_, err = tx.Exec("INSERT INTO services (owner, destination, dns_record_type, subdomain, forwarding, rate_limit, limit_by) VALUES (?, ?, ?, ?, ?, ?, ?)", service.Owner, service.Destination, service.DNSRecordType, service.Subdomain, service.Forwarding, service.RateLimit, service.LimitBy)
 	if err != nil {
 		return err
@@ -113,7 +132,7 @@ func (d *database) GetService(owner, subdomain string) (models.ServiceEntry, err
 }
 
 func (d *database) GetServices(owner string) ([]models.ServiceEntry, error) {
-	var services []models.ServiceEntry
+	services := make([]models.ServiceEntry, 0)
 	err := d.db.Select(&services, "SELECT * FROM services WHERE owner = ?", owner)
 	return services, err
 }
@@ -123,6 +142,14 @@ func (d *database) DeleteService(owner, subdomain string) error {
 	if err != nil {
 		return err
 	}
+	defer func() {
+		if err != nil {
+			log.Printf("Rolling back transaction due to %s\n", err.Error())
+			tx.Rollback()
+		} else {
+			tx.Commit()
+		}
+	}()
 	_, err = tx.Exec("DELETE FROM services WHERE owner = ? AND subdomain = ?", owner, subdomain)
 	if err != nil {
 		return err
@@ -135,6 +162,14 @@ func (d *database) UpdateService(service models.ServiceEntry) error {
 	if err != nil {
 		return err
 	}
+	defer func() {
+		if err != nil {
+			log.Printf("Rolling back transaction due to %s\n", err.Error())
+			tx.Rollback()
+		} else {
+			tx.Commit()
+		}
+	}()
 	_, err = tx.Exec("UPDATE services SET destination = ?, dns_record_type = ?, forwarding = ?, rate_limit = ?, limit_by = ? WHERE owner = ? AND subdomain = ?", service.Destination, service.DNSRecordType, service.Forwarding, service.RateLimit, service.LimitBy, service.Owner, service.Subdomain)
 	if err != nil {
 		return err

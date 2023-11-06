@@ -1,14 +1,15 @@
 package database
 
 import (
+	"log"
 	"strings"
 
 	"github.com/acheong08/nameserver/models"
 )
 
 type Storage struct {
-	cache *dnsCache
-	db    *database
+	cache    *dnsCache
+	db       *database
 	publicIP string
 }
 
@@ -18,13 +19,16 @@ func NewStorage(publicIP string) (*Storage, error) {
 		return nil, err
 	}
 	return &Storage{
-		cache: newCache(),
-		db:    db,
+		cache:    newCache(),
+		db:       db,
 		publicIP: publicIP,
 	}, nil
 }
 
 func (s *Storage) GetDNS(domain string) []*dnsCacheItem {
+	if domain[len(domain)-1] == '.' {
+		domain = domain[:len(domain)-1]
+	}
 	// Check if the domain is in the cache
 	items, ok := s.cache.Get(domain)
 	if ok {
@@ -37,21 +41,24 @@ func (s *Storage) GetDNS(domain string) []*dnsCacheItem {
 	}
 	// Get the root domain
 	rootDomain := domainList[len(domainList)-2] + "." + domainList[len(domainList)-1]
+	log.Printf("Root domain: %s\n", rootDomain)
 	// Get the owner of the domain
 	owner, err := s.db.GetDomainOwner(rootDomain)
 	if err != nil {
 		return nil
 	}
+	// Get the subdomain (remove root domain)
+	subdomain := domain[:len(domain)-len(rootDomain)-1]
 	// Get service from database
-	service, err := s.db.GetService(owner.Username, domain)
+	service, err := s.db.GetService(owner.Username, subdomain)
 	if err != nil {
 		return nil
 	}
 	if service.Forwarding {
 		// If it is, add it to the cache
-			s.cache.Set(domain, s.publicIP, service.DNSRecordType)
+		s.cache.Set(domain, s.publicIP, service.DNSRecordType)
 	} else {
-	// If forwarding is not enabled, directly return the destination
+		// If forwarding is not enabled, directly return the destination
 		s.cache.Set(domain, service.Destination, service.DNSRecordType)
 	}
 	items, ok = s.cache.Get(domain)
@@ -62,7 +69,7 @@ func (s *Storage) GetDNS(domain string) []*dnsCacheItem {
 }
 
 func (s *Storage) ClearCache() {
-	s.cache.Clear(100)
+	s.cache.Clear()
 }
 
 func (s *Storage) Close() error {
