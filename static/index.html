@@ -79,21 +79,11 @@
       <section id="subdomains">
         <h1>Subdomain Configurator</h1>
         <select id="subdomain">
-          <option value="" id="removeMe"></option>
+          <option value="<makenew>"></option>
           <template hx-endpoint="/api/service" hx-action="append">
             <option value="${subdomain}">${subdomain}</option>
           </template>
         </select>
-        <script>
-          const subdomain = document.getElementById("subdomain");
-          subdomain.addEventListener("change", (event) => {
-            // Remove the empty option
-            const removeMe = document.getElementById("removeMe");
-            if (removeMe) {
-              removeMe.remove();
-            }
-          });
-        </script>
       </section>
       <section id="settings">
         <template
@@ -101,7 +91,7 @@
           hx-method="GET"
           hx-data-sources="#subdomain"
           hx-event-target="#subdomain"
-          hx-event="onchange"
+          hx-event="onchange, onload"
         >
           <div id="serviceInfo">
             <div>
@@ -148,6 +138,15 @@
           const inputs = document.querySelectorAll("#serviceInfo input");
           const data = {};
           inputs.forEach((input) => {
+            // Check input type
+            if (input.type === "checkbox") {
+              data[input.name] = input.checked;
+              return;
+            }
+            if (input.type === "number") {
+              data[input.name] = parseInt(input.value);
+              return;
+            }
             data[input.name] = input.value;
           });
           // Send the data to the server

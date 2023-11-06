@@ -104,6 +104,12 @@ func ServiceEntry(c *gin.Context) {
 			c.JSON(200, services)
 			return
 		}
+		if subdomain == "<makenew>" {
+			c.JSON(200, models.ServiceEntry{
+				Domain: owner.Domain,
+			})
+			return
+		}
 		// Get service for user and domain
 		service, err := storage.GetService(owner.Username, subdomain)
 		if err != nil {
