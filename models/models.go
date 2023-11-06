@@ -17,11 +17,12 @@ const (
 type ServiceEntry struct {
 	// http://ip:port if forwarding
 	// IP address if not forwarding
-	Owner         string  `json:"owner" db:"owner"`
-	Destination   string  `json:"destination" db:"destination"`
+	Owner         string  `json:"owner,omitempty" db:"owner"`
+	Destination   string  `json:"destination,omitempty" db:"destination"`
 	Port          int     `json:"port" db:"port"`
-	DNSRecordType string  `json:"dns_record_type" db:"dns_record_type"`
-	Subdomain     string  `json:"subdomain" db:"subdomain"`
+	DNSRecordType string  `json:"dns_record_type,omitempty" db:"dns_record_type"`
+	Subdomain     string  `json:"subdomain,omitempty" db:"subdomain"`
+	Domain        string  `json:"domain,omitempty"`
 	Forwarding    bool    `json:"forwarding" db:"forwarding"`
 	RateLimit     int     `json:"rate_limit" db:"rate_limit"`
 	LimitBy       limitBy `json:"limit_by" db:"limit_by"`

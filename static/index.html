@@ -1,0 +1,188 @@
+<!doctype html>
+<html>
+  <head>
+    <script src="htmj.js" defer></script>
+    <style>
+      /* CSS Reset */
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        background-color: #f4f4f4;
+        padding: 2rem;
+      }
+
+      main {
+        max-width: 90%;
+        margin: 0 auto;
+      }
+
+      h1 {
+        font-size: 1.75rem;
+        color: #444;
+        margin-bottom: 1rem;
+        text-align: center;
+      }
+
+      select,
+      input {
+        padding: 0.5rem;
+        margin-bottom: 1rem;
+        border: 1px solid #ddd;
+        border-radius: 0.25rem;
+        font-size: 1rem;
+      }
+
+      select:focus,
+      input:focus {
+        border-color: #3498db;
+        outline: none;
+      }
+
+      #settings > div {
+        background-color: #fff;
+        padding: 1rem;
+        border-radius: 0.25rem;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      #settings input[type="text"] {
+        flex: 1;
+        margin-right: 0.5rem;
+      }
+
+      #serviceInfo button {
+        width: 10rem;
+        padding: 1rem;
+      }
+
+      span {
+        align-self: center;
+        padding: 0 0.5rem;
+      }
+    </style>
+  </head>
+
+  <body>
+    <main>
+      <section id="subdomains">
+        <h1>Subdomain Configurator</h1>
+        <select id="subdomain">
+          <option value="" id="removeMe"></option>
+          <template hx-endpoint="/api/service" hx-action="append">
+            <option value="${subdomain}">${subdomain}</option>
+          </template>
+        </select>
+        <script>
+          const subdomain = document.getElementById("subdomain");
+          subdomain.addEventListener("change", (event) => {
+            // Remove the empty option
+            const removeMe = document.getElementById("removeMe");
+            if (removeMe) {
+              removeMe.remove();
+            }
+          });
+        </script>
+      </section>
+      <section id="settings">
+        <template
+          hx-endpoint="/api/service"
+          hx-method="GET"
+          hx-data-sources="#subdomain"
+          hx-event-target="#subdomain"
+          hx-event="onchange"
+        >
+          <div id="serviceInfo">
+            <div>
+              <label for="subdomain">Subdomain</label>
+              <input
+                type="text"
+                name="subdomain"
+                value="${subdomain}"
+                original-value="${subdomain}"
+                onchange="postIt()"
+              />
+              <span>.${domain}</span>
+            </div>
+            <label for="destination">Destination</label>
+            <input type="text" name="destination" value="${destination}" />
+            <label for="dns_record_type">DNS Record Type</label>
+            <input
+              type="text"
+              name="dns_record_type"
+              value="${dns_record_type}"
+            />
+            <label for="port">Port</label>
+            <input type="number" name="port" value="${port}" />
+            <label for="rate_limit">Rate Limit</label>
+            <input type="number" name="rate_limit" value="${rate_limit}" />
+            <label for="limit_by">Limit By</label>
+            <select type="text" name="limit_by" value="${limit_by}">
+              <option value="0">Seconds</option>
+              <option value="1">Minutes</option>
+              <option value="2">Hours</option>
+            </select>
+            <div>
+              <label for="forwarding">Forwarding</label>
+              <input type="checkbox" name="forwarding" value="${forwarding}" />
+            </div>
+            <button type="submit" onclick="patchSubdomain()">Save</button>
+          </div>
+        </template>
+      </section>
+      <script>
+        let method = "PATCH";
+        async function patchSubdomain() {
+          // Loop through all the inputs and create a JSON object
+          const inputs = document.querySelectorAll("#serviceInfo input");
+          const data = {};
+          inputs.forEach((input) => {
+            data[input.name] = input.value;
+          });
+          // Send the data to the server
+          const response = await fetch("/api/service", {
+            method: method,
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(data),
+          });
+          respData = await response.json();
+          if (response.ok) {
+            alert(respData.success);
+            return;
+          }
+          alert("Something went wrong: " + respData.error);
+        }
+        function postIt() {
+          // Check if value is different from original value
+          const subdomain = document.querySelector(
+            "#serviceInfo input[name='subdomain']",
+          );
+          if (subdomain.value !== subdomain.getAttribute("original-value")) {
+            // Set button to "Create"
+            const button = document.querySelector("#serviceInfo button");
+            button.textContent = "Create";
+            method = "POST";
+          } else {
+            // Set button to "Save"
+            const button = document.querySelector("#serviceInfo button");
+            button.textContent = "Save";
+            method = "PATCH";
+          }
+        }
+      </script>
+    </main>
+  </body>
+</html>

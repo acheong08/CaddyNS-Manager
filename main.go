@@ -1,6 +1,7 @@
 package main
 
 import (
+	"embed"
 	"flag"
 	"fmt"
 	"log"
@@ -11,6 +12,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/miekg/dns"
 )
+
+//go:embed static/*
+var staticEmbed embed.FS
 
 func main() {
 	dnsAddr := flag.String("dns-addr", ":5553", "DNS listen address")
@@ -67,6 +71,35 @@ func main() {
 		c.String(200, "pong")
 	})
 	router.POST("/login", api.Login)
+	router.GET("/login.html", func(ctx *gin.Context) {
+		// Serve login.html
+		login, err := staticEmbed.ReadFile("static/login.html")
+		if err != nil {
+			ctx.String(500, err.Error())
+			return
+		}
+		ctx.Data(200, "text/html", login)
+	})
+	router.GET("/", func(ctx *gin.Context) {
+		// Check for auth cookie
+		cookie, err := ctx.Cookie("Authorization")
+		if err != nil || cookie == "" {
+			ctx.Redirect(302, "/login.html")
+			return
+		}
+		// Serve index.html
+		index, err := staticEmbed.ReadFile("static/index.html")
+		if err != nil {
+			ctx.String(500, err.Error())
+			return
+		}
+		ctx.Data(200, "text/html", index)
+	})
+	router.GET("/htmj.js", func(ctx *gin.Context) {
+		// Serve index.html
+	 		index, _ := staticEmbed.ReadFile("static/htmj.js")
+			ctx.Data(200, "text/javascript", index)
+	})
 	authNeeded := router.Group("/api")
 	if !*debug {
 		authNeeded.Use(api.AuthMiddleware)
@@ -91,6 +124,7 @@ func main() {
 	authNeeded.POST("/service", api.ServiceEntry)
 	authNeeded.DELETE("/service", api.ServiceEntry)
 	authNeeded.PATCH("/service", api.ServiceEntry)
+
 	router.Run(*httpAddr)
 
 }

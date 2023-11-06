@@ -18,9 +18,13 @@ func init() {
 func AuthMiddleware(c *gin.Context) {
 	auth := c.Request.Header.Get("Authorization")
 	if auth == "" {
-		c.JSON(401, gin.H{"error": "Authorization header missing"})
-		c.Abort()
-		return
+		// Check cookie for auth
+		auth, _ = c.Cookie("Authorization")
+		if auth == "" {
+			c.JSON(401, gin.H{"error": "Authorization header missing"})
+			c.Abort()
+			return
+		}
 	}
 	// JWT
 	token, err := jwt.Parse(auth, func(token *jwt.Token) (interface{}, error) {
@@ -79,7 +83,9 @@ func Login(c *gin.Context) {
 		c.JSON(500, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(200, gin.H{"token": tokenString})
+	c.SetCookie("Authorization", tokenString, 0, "/", "", false, true)
+	c.Header("Location", "/")
+	c.JSON(302, gin.H{"token": tokenString})
 }
 
 func ServiceEntry(c *gin.Context) {
@@ -87,8 +93,8 @@ func ServiceEntry(c *gin.Context) {
 	owner := c.MustGet("user").(models.User)
 
 	if c.Request.Method == "GET" {
-		domain := c.Query("domain")
-		if domain == "" {
+		subdomain := c.Query("subdomain")
+		if subdomain == "" {
 			// Get all services for user
 			services, err := storage.GetServices(owner.Username)
 			if err != nil {
@@ -99,12 +105,14 @@ func ServiceEntry(c *gin.Context) {
 			return
 		}
 		// Get service for user and domain
-		service, err := storage.GetService(owner.Username, domain)
+		service, err := storage.GetService(owner.Username, subdomain)
 		if err != nil {
 			c.JSON(500, gin.H{"error": err.Error()})
 			return
 		}
+		service.Domain = owner.Domain
 		c.JSON(200, service)
+		return
 	}
 	var config models.ServiceEntry
 	if err := c.BindJSON(&config); err != nil {

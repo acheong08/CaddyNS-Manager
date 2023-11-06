@@ -133,7 +133,7 @@ func (d *database) GetService(owner, subdomain string) (models.ServiceEntry, err
 
 func (d *database) GetServices(owner string) ([]models.ServiceEntry, error) {
 	services := make([]models.ServiceEntry, 0)
-	err := d.db.Select(&services, "SELECT * FROM services WHERE owner = ?", owner)
+	err := d.db.Select(&services, "SELECT subdomain FROM services WHERE owner = ?", owner)
 	return services, err
 }
 
