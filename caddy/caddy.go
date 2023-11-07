@@ -89,6 +89,48 @@ func AddConfig(config Config) error {
 	return nil
 }
 
+func Update(config Config) error {
+	url := "http://127.0.0.1:2019/config/apps/http/servers/srv0/routes"
+
+	resp, err := http.DefaultClient.Get(url)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	var routes []Config
+	err = json.NewDecoder(resp.Body).Decode(&routes)
+	if err != nil {
+		return err
+	}
+
+	for idx, route := range routes {
+		for _, match := range route.Match {
+			for _, host := range match.Host {
+				if host == config.Match[0].Host[0] {
+					url := fmt.Sprintf("http://127.0.0.1:2019/config/apps/http/servers/srv0/routes/%d", idx)
+					req, err := http.NewRequest("PATCH", url, bytes.NewBuffer(config.JSON()))
+					if err != nil {
+						return err
+					}
+					req.Header.Set("Content-Type", "application/json")
+
+					resp, err := http.DefaultClient.Do(req)
+					if err != nil {
+						return err
+					}
+					defer resp.Body.Close()
+					if resp.StatusCode != 200 {
+						return fmt.Errorf("Caddy returned status code %d", resp.StatusCode)
+					}
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
 func RemoveHost(domain string) error {
 	url := "http://127.0.0.1:2019/config/apps/http/servers/srv0/routes"
 

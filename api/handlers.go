@@ -2,7 +2,9 @@ package api
 
 import (
 	"crypto/rand"
+	"strconv"
 
+	"github.com/acheong08/nameserver/caddy"
 	"github.com/acheong08/nameserver/database"
 	"github.com/acheong08/nameserver/models"
 	"github.com/gin-gonic/gin"
@@ -140,6 +142,14 @@ func ServiceEntry(c *gin.Context) {
 		}
 		// Add service entry to storage
 		err = storage.NewService(config)
+		if config.Forwarding {
+			if err != nil {
+				c.JSON(500, gin.H{"error": err.Error()})
+				return
+			}
+
+			err = caddy.AddConfig(caddy.NewConfig(config.Subdomain+"."+owner.Domain, "http://"+config.Destination+":"+strconv.Itoa(config.Port)))
+		}
 		message = "Service entry added"
 
 	case "DELETE":
@@ -149,8 +159,14 @@ func ServiceEntry(c *gin.Context) {
 		}
 		// Remove service entry from storage
 		err = storage.DeleteService(owner.Username, config.Subdomain)
+		if err != nil {
+			c.JSON(500, gin.H{"error": err.Error()})
+			return
+		}
 		// Clear cache
 		storage.ClearCache()
+		// Update caddy
+		err = caddy.RemoveHost(config.Subdomain)
 		message = "Service entry removed"
 
 	case "PATCH":
@@ -158,8 +174,11 @@ func ServiceEntry(c *gin.Context) {
 			c.JSON(400, gin.H{"error": "Invalid service entry"})
 			return
 		}
-		err = storage.UpdateService(config)
+		if config.Forwarding {
+			err = storage.UpdateService(config)
+		}
 		storage.ClearCache()
+
 		message = "Service entry updated"
 
 	default:
