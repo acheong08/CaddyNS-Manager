@@ -67,12 +67,31 @@ func (c Config) JSON() []byte {
 	return b
 }
 
-func ResetConfig()
+func ResetConfig(configs []Config) error {
+	url := "http://127.0.0.01:2019/config/apps/http/servers/srv0/routes"
+	body, _ := json.Marshal(configs)
+	req, err := http.NewRequest("PATCH", url, bytes.NewBuffer(body))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return fmt.Errorf("Caddy returned status code %d", resp.StatusCode)
+	}
+	return nil
+
+}
 
 func AddConfig(config Config) error {
 	url := "http://127.0.0.1:2019/config/apps/http/servers/srv0/routes"
 
-	req, err := http.NewRequest("PUT", url, bytes.NewBuffer(config.JSON()))
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(config.JSON()))
 	if err != nil {
 		return err
 	}

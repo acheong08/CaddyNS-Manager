@@ -174,8 +174,16 @@ func ServiceEntry(c *gin.Context) {
 			c.JSON(400, gin.H{"error": "Invalid service entry"})
 			return
 		}
+		err = storage.UpdateService(config)
 		if config.Forwarding {
-			err = storage.UpdateService(config)
+			if err != nil {
+				c.JSON(500, gin.H{"error": err.Error()})
+				return
+			}
+			err = caddy.Update(caddy.NewConfig(
+				config.Subdomain+"."+owner.Domain,
+				"http://"+config.Destination+":"+strconv.Itoa(config.Port),
+			))
 		}
 		storage.ClearCache()
 

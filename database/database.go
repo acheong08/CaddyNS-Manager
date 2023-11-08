@@ -21,6 +21,7 @@ const (
 		CREATE TABLE IF NOT EXISTS services (
 			owner TEXT NOT NULL,
 			destination TEXT NOT NULL,
+			port INTEGER NOT NULL,
 			dns_record_type TEXT NOT NULL,
 			subdomain TEXT NOT NULL,
 			forwarding INTEGER NOT NULL,
@@ -118,7 +119,7 @@ func (d *database) NewService(service models.ServiceEntry) error {
 			tx.Commit()
 		}
 	}()
-	_, err = tx.Exec("INSERT INTO services (owner, destination, dns_record_type, subdomain, forwarding, rate_limit, limit_by) VALUES (?, ?, ?, ?, ?, ?, ?)", service.Owner, service.Destination, service.DNSRecordType, service.Subdomain, service.Forwarding, service.RateLimit, service.LimitBy)
+	_, err = tx.Exec("INSERT INTO services (owner, destination, port, dns_record_type, subdomain, forwarding, rate_limit, limit_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", service.Owner, service.Destination, service.Port, service.DNSRecordType, service.Subdomain, service.Forwarding, service.RateLimit, service.LimitBy)
 	if err != nil {
 		return err
 	}
@@ -170,7 +171,7 @@ func (d *database) UpdateService(service models.ServiceEntry) error {
 			tx.Commit()
 		}
 	}()
-	_, err = tx.Exec("UPDATE services SET destination = ?, dns_record_type = ?, forwarding = ?, rate_limit = ?, limit_by = ? WHERE owner = ? AND subdomain = ?", service.Destination, service.DNSRecordType, service.Forwarding, service.RateLimit, service.LimitBy, service.Owner, service.Subdomain)
+	_, err = tx.Exec("UPDATE services SET destination = ?, port = ?, dns_record_type = ?, forwarding = ?, rate_limit = ?, limit_by = ? WHERE owner = ? AND subdomain = ?", service.Destination, service.Port, service.DNSRecordType, service.Forwarding, service.RateLimit, service.LimitBy, service.Owner, service.Subdomain)
 	if err != nil {
 		return err
 	}
