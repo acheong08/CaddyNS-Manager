@@ -142,6 +142,9 @@ func ServiceEntry(c *gin.Context) {
 		}
 
 		if config.Forwarding {
+			// Delete old service service entry
+			// Error can be ignored since it might not exist
+			caddy.RemoveHost(config.Subdomain + "." + owner.Domain)
 			err = caddy.AddConfig(caddy.NewConfig(config.Subdomain+"."+owner.Domain, "http://"+config.Destination+":"+strconv.Itoa(config.Port)))
 			if err != nil {
 				c.JSON(500, gin.H{"error": err.Error()})
