@@ -140,16 +140,15 @@ func ServiceEntry(c *gin.Context) {
 			c.JSON(400, gin.H{"error": "Invalid service entry"})
 			return
 		}
-		// Add service entry to storage
-		err = storage.NewService(config)
+
 		if config.Forwarding {
+			err = caddy.AddConfig(caddy.NewConfig(config.Subdomain+"."+owner.Domain, "http://"+config.Destination+":"+strconv.Itoa(config.Port)))
 			if err != nil {
 				c.JSON(500, gin.H{"error": err.Error()})
 				return
 			}
-
-			err = caddy.AddConfig(caddy.NewConfig(config.Subdomain+"."+owner.Domain, "http://"+config.Destination+":"+strconv.Itoa(config.Port)))
-		}
+		} // Add service entry to storage
+		err = storage.NewService(config)
 		message = "Service entry added"
 
 	case "DELETE":
@@ -166,7 +165,7 @@ func ServiceEntry(c *gin.Context) {
 		// Clear cache
 		storage.ClearCache()
 		// Update caddy
-		err = caddy.RemoveHost(config.Subdomain)
+		err = caddy.RemoveHost(config.Subdomain + "." + owner.Domain)
 		message = "Service entry removed"
 
 	case "PATCH":
@@ -174,18 +173,19 @@ func ServiceEntry(c *gin.Context) {
 			c.JSON(400, gin.H{"error": "Invalid service entry"})
 			return
 		}
-		err = storage.UpdateService(config)
 		if config.Forwarding {
-			if err != nil {
-				c.JSON(500, gin.H{"error": err.Error()})
-				return
-			}
+
 			err = caddy.Update(caddy.NewConfig(
 				config.Subdomain+"."+owner.Domain,
 				"http://"+config.Destination+":"+strconv.Itoa(config.Port),
 			))
+			if err != nil {
+				c.JSON(500, gin.H{"error": err.Error()})
+				return
+			}
 		}
 		storage.ClearCache()
+		err = storage.UpdateService(config)
 
 		message = "Service entry updated"
 

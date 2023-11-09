@@ -125,9 +125,21 @@
             </select>
             <div>
               <label for="forwarding">Forwarding</label>
-              <input type="checkbox" name="forwarding" value="${forwarding}" />
+              <input type="checkbox" name="forwarding" />
+              <script>
+                document.querySelector(
+                  "#serviceInfo input[name='forwarding']",
+                ).checked = ${forwarding};
+              </script>
             </div>
             <button type="submit" onclick="patchSubdomain()">Save</button>
+            <button
+              type="submit"
+              onclick="method='DELETE';patchSubdomain()"
+              style="color: red"
+            >
+              Delete
+            </button>
           </div>
         </template>
       </section>
@@ -160,6 +172,7 @@
           respData = await response.json();
           if (response.ok) {
             alert(respData.success);
+            location.reload();
             return;
           }
           alert("Something went wrong: " + respData.error);

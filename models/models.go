@@ -1,5 +1,7 @@
 package models
 
+import "github.com/miekg/dns"
+
 type User struct {
 	Username string `json:"username" db:"username"`
 	Password string `json:"password" db:"password"`
@@ -37,6 +39,9 @@ func (se *ServiceEntry) IsValidFOrPost() bool {
 		return false
 	}
 	if se.Forwarding && se.Port == 0 {
+		return false
+	}
+	if _, ok := dns.StringToType[se.DNSRecordType]; !ok {
 		return false
 	}
 	return true
