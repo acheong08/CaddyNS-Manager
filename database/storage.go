@@ -34,7 +34,8 @@ func (s *Storage) GetDNS(domain string) []*dnsCacheItem {
 	}
 	// Split the domain to find root domain
 	domainList := strings.Split(domain, ".")
-	if len(domainList) == 0 {
+	// Prevent index out of range
+	if len(domainList) < 2 {
 		return nil
 	}
 	// Get the root domain

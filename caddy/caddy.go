@@ -9,40 +9,46 @@ import (
 
 // Define Go structs
 type Config struct {
-	Handle   []Handle `json:"handle"`
-	Match    []Match  `json:"match"`
+	Handle   []handle `json:"handle"`
+	Match    []match  `json:"match"`
 	Terminal bool     `json:"terminal"`
 }
 
-type Handle struct {
-	Handler   string     `json:"handler"`
-	Routes    []Route    `json:"routes,omitempty"`
-	Upstreams []Upstream `json:"upstreams,omitempty"`
+type handle struct {
+	Handler   string      `json:"handler"`
+	Routes    []route     `json:"routes,omitempty"`
+	Upstreams []upstreamd `json:"upstreams,omitempty"`
+	Transport transport   `json:"transport,omitempty"`
 }
 
-type Route struct {
-	Handle []Handle `json:"handle"`
+type transport struct {
+	Protocol string            `json:"protocol"`
+	TLS      map[string]string `json:"tls"`
 }
 
-type Match struct {
+type route struct {
+	Handle []handle `json:"handle"`
+}
+
+type match struct {
 	Host []string `json:"host"`
 }
 
-type Upstream struct {
+type upstreamd struct {
 	Dial string `json:"dial"`
 }
 
 func NewConfig(host, upstream string) Config {
-	return Config{
-		Handle: []Handle{
+	config := Config{
+		Handle: []handle{
 			{
 				Handler: "subroute",
-				Routes: []Route{
+				Routes: []route{
 					{
-						Handle: []Handle{
+						Handle: []handle{
 							{
 								Handler: "reverse_proxy",
-								Upstreams: []Upstream{
+								Upstreams: []upstreamd{
 									{
 										Dial: upstream,
 									},
@@ -53,13 +59,25 @@ func NewConfig(host, upstream string) Config {
 				},
 			},
 		},
-		Match: []Match{
+		Match: []match{
 			{
 				Host: []string{host},
 			},
 		},
 		Terminal: true,
 	}
+	// Check if upstream ends with 443 or starts with https://
+	if upstream[len(upstream)-3:] == "443" || upstream[:8] == "https://" {
+		config.Handle[0].Transport = transport{
+			Protocol: "http",
+			TLS:      make(map[string]string),
+		}
+	}
+	if upstream[:8] == "https://" {
+		// This should remove https:// from upstream
+		config.Handle[0].Upstreams[0].Dial = upstream[8:]
+	}
+	return config
 }
 
 func (c Config) JSON() []byte {
