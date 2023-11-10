@@ -226,6 +226,12 @@ func ServiceEntry(c *gin.Context) {
 	return
 }
 
+func ClearCache(c *gin.Context) {
+ 	storage := c.MustGet("storage").(*database.Storage)
+	storage.Cache.Clear()
+	c.JSON(200, gin.H{"success": "Cache cleared"})
+}
+
 func constructUpstream(dest string, port int) string {
 	return dest + ":" + strconv.Itoa(port)
 }

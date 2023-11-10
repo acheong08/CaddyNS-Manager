@@ -140,6 +140,8 @@ func main() {
 	authNeeded.DELETE("/service", api.ServiceEntry)
 	authNeeded.PATCH("/service", api.ServiceEntry)
 
+	authNeeded.POST("/cache/clear", api.ClearCache)
+
 	router.Run(*httpAddr)
 
 }

@@ -71,6 +71,14 @@
         align-self: center;
         padding: 0 0.5rem;
       }
+      .danger-btn {
+        background-color: #e74c3c;
+        color: #fff;
+        border: none;
+        border-radius: 0.25rem;
+        padding: 0.5rem 1rem;
+        cursor: pointer;
+      }
     </style>
   </head>
 
@@ -84,6 +92,22 @@
             <option value="${id}">${subdomain}</option>
           </template>
         </select>
+      </section>
+      <section id="clearCache">
+        <button type="submit" class="danger-btn" onclick="clearCache()">Clear Cache</button>
+        <script>
+          async function clearCache() {
+            const response = await fetch("/api/cache/clear", {
+              method: "POST",
+            });
+            respData = await response.json();
+            if (response.ok) {
+              alert(respData.success);
+              return;
+            }
+            alert("Something went wrong: " + respData.error);
+          }
+        </script>
       </section>
       <section id="settings">
         <template
@@ -140,10 +164,9 @@
                 ).checked = ${forwarding};
               </script>
             </div>
-            <button
-              type="submit"
-              onclick="checkPostOrPatch();patchSubdomain()"
-            ></button>
+            <button type="submit" onclick="checkPostOrPatch();patchSubdomain()">
+              POST
+            </button>
             <button
               type="submit"
               onclick="method='DELETE';patchSubdomain();"
@@ -155,7 +178,6 @@
         </template>
       </section>
       <script>
-        checkPostOrPatch();
         let method = "POST";
         async function patchSubdomain() {
           // Loop through all the inputs and create a JSON object
