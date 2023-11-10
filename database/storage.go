@@ -45,6 +45,9 @@ func (s *Storage) GetDNS(domain string) []*dnsCacheItem {
 	if err != nil {
 		return nil
 	}
+	if len(domain) < len(rootDomain)+2 {
+	 		return nil
+	}
 	// Get the subdomain (remove root domain)
 	subdomain := domain[:len(domain)-len(rootDomain)-1]
 	// Get service from database

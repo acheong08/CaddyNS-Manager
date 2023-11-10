@@ -27,7 +27,7 @@ func main() {
 	if err != nil {
 		panic(fmt.Errorf("Failed to start storage: %s\n", err.Error()))
 	}
-	defer storage.Close()
+	defer storage.DB.Close()
 
 	go func(dnsAddr *string, storage *database.Storage) {
 		server := &dns.Server{Addr: *dnsAddr, Net: "udp", ReusePort: true, TsigSecret: nil}
@@ -46,10 +46,11 @@ func main() {
 				return
 			}
 			for _, dnsRecord := range dnsRecords {
-				if dnsRecord.RecordType == qType {
-					rr, err := dns.NewRR(fmt.Sprintf("%s %d IN %s %s", qName, 60, qType, dnsRecord.Dest))
+				if dnsRecord.RecordType == qType || dnsRecord.RecordType == "CNAME" {
+					rr, err := dns.NewRR(fmt.Sprintf("%s %d IN %s %s", qName, 60, dnsRecord.RecordType, dnsRecord.Dest))
 					if err != nil {
-						panic(fmt.Errorf("Failed to create RR: %s\n", err.Error()))
+						fmt.Println(fmt.Errorf("Failed to create RR: %s\n", err.Error()))
+						continue
 					}
 					m.Answer = append(m.Answer, rr)
 				}
@@ -104,7 +105,7 @@ func main() {
 	if !*debug {
 		authNeeded.Use(api.AuthMiddleware)
 	} else {
-		err := storage.NewUser(models.User{
+		err := storage.DB.NewUser(models.User{
 			Username: "admin",
 			Password: "admin",
 			Domain:   "example.com",

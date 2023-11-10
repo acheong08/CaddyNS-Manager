@@ -109,6 +109,7 @@ func AddConfig(config Config) error {
 }
 
 func Update(config Config) error {
+	updated := false
 	url := "http://127.0.0.1:2019/config/apps/http/servers/srv0/routes"
 
 	resp, err := http.DefaultClient.Get(url)
@@ -142,9 +143,13 @@ func Update(config Config) error {
 					if resp.StatusCode != 200 {
 						return fmt.Errorf("Caddy returned status code %d", resp.StatusCode)
 					}
+					updated = true
 				}
 			}
 		}
+	}
+	if !updated {
+		return AddConfig(config)
 	}
 
 	return nil
