@@ -94,7 +94,9 @@
         </select>
       </section>
       <section id="clearCache">
-        <button type="submit" class="danger-btn" onclick="clearCache()">Clear Cache</button>
+        <button type="submit" class="danger-btn" onclick="clearCache()">
+          Clear Cache
+        </button>
         <script>
           async function clearCache() {
             const response = await fetch("/api/cache/clear", {
@@ -164,16 +166,21 @@
                 ).checked = ${forwarding};
               </script>
             </div>
-            <button type="submit" onclick="checkPostOrPatch();patchSubdomain()">
-              POST
-            </button>
-            <button
-              type="submit"
-              onclick="method='DELETE';patchSubdomain();"
-              style="color: red"
-            >
-              Delete
-            </button>
+            <div style="display: flex;">
+              <button
+                type="submit"
+                onclick="checkPostOrPatch();patchSubdomain()"
+              >
+                POST
+              </button>
+              <button
+                type="submit"
+                onclick="method='DELETE';patchSubdomain();"
+                style="color: red"
+              >
+                Delete
+              </button>
+            </div>
           </div>
         </template>
       </section>
