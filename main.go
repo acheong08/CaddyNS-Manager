@@ -10,6 +10,7 @@ import (
 	"github.com/acheong08/nameserver/database"
 	"github.com/acheong08/nameserver/models"
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/miekg/dns"
 )
 
@@ -81,25 +82,38 @@ func main() {
 		}
 		ctx.Data(200, "text/html", login)
 	})
-	router.GET("/", func(ctx *gin.Context) {
+	router.GET("/", func(c *gin.Context) {
 		// Check for auth cookie
-		cookie, err := ctx.Cookie("Authorization")
+		cookie, err := c.Cookie("Authorization")
 		if err != nil || cookie == "" {
-			ctx.Redirect(302, "/login.html")
+			c.Redirect(302, "/login.html")
+			return
+		}
+		// JWT
+		token, err := jwt.Parse(cookie, func(token *jwt.Token) (interface{}, error) {
+			return api.Secret[:], nil
+		})
+		if err != nil {
+			c.Redirect(302, "/login.html")
+			return
+		}
+		_, ok := token.Claims.(jwt.MapClaims)
+		if !ok {
+			c.Redirect(302, "/login.html")
 			return
 		}
 		// Serve index.html
 		index, err := staticEmbed.ReadFile("static/index.html")
 		if err != nil {
-			ctx.String(500, err.Error())
+			c.String(500, err.Error())
 			return
 		}
-		ctx.Data(200, "text/html", index)
+		c.Data(200, "text/html", index)
 	})
 	router.GET("/htmj.js", func(ctx *gin.Context) {
 		// Serve index.html
-	 		index, _ := staticEmbed.ReadFile("static/htmj.js")
-			ctx.Data(200, "text/javascript", index)
+		index, _ := staticEmbed.ReadFile("static/htmj.js")
+		ctx.Data(200, "text/javascript", index)
 	})
 	authNeeded := router.Group("/api")
 	if !*debug {

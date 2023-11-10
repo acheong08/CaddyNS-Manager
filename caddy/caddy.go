@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 )
 
 // Define Go structs
@@ -18,7 +19,7 @@ type handle struct {
 	Handler   string      `json:"handler"`
 	Routes    []route     `json:"routes,omitempty"`
 	Upstreams []upstreamd `json:"upstreams,omitempty"`
-	Transport transport   `json:"transport,omitempty"`
+	Transport *transport  `json:"transport,omitempty"`
 }
 
 type transport struct {
@@ -66,16 +67,17 @@ func NewConfig(host, upstream string) Config {
 		},
 		Terminal: true,
 	}
+	// Upstream must be longer than 8 characters to check for https://
 	// Check if upstream ends with 443 or starts with https://
-	if upstream[len(upstream)-3:] == "443" || upstream[:8] == "https://" {
-		config.Handle[0].Transport = transport{
+	if strings.HasSuffix(upstream, ":443") || strings.HasPrefix(upstream, "https://") {
+		config.Handle[0].Routes[0].Handle[0].Transport = &transport{
 			Protocol: "http",
 			TLS:      make(map[string]string),
 		}
 	}
-	if upstream[:8] == "https://" {
+	if strings.HasPrefix(upstream, "https://") {
 		// This should remove https:// from upstream
-		config.Handle[0].Upstreams[0].Dial = upstream[8:]
+		config.Handle[0].Upstreams[0].Dial = strings.Replace(upstream, "https://", "", 1)
 	}
 	return config
 }

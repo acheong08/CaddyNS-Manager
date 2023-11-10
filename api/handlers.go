@@ -11,10 +11,10 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-var secret [32]byte
+var Secret [32]byte
 
 func init() {
-	rand.Read(secret[:])
+	rand.Read(Secret[:])
 }
 
 func AuthMiddleware(c *gin.Context) {
@@ -30,7 +30,7 @@ func AuthMiddleware(c *gin.Context) {
 	}
 	// JWT
 	token, err := jwt.Parse(auth, func(token *jwt.Token) (interface{}, error) {
-		return secret[:], nil
+		return Secret[:], nil
 	})
 	if err != nil {
 		c.JSON(401, gin.H{"error": err.Error()})
@@ -80,7 +80,7 @@ func Login(c *gin.Context) {
 		"username": user.Username,
 		"domain":   user.Domain,
 	})
-	tokenString, err := token.SignedString(secret[:])
+	tokenString, err := token.SignedString(Secret[:])
 	if err != nil {
 		c.JSON(500, gin.H{"error": err.Error()})
 		return
@@ -216,8 +216,5 @@ func ServiceEntry(c *gin.Context) {
 }
 
 func constructUpstream(dest string, port int) string {
-	if port == 443 {
-		return "https://" + dest
-	}
 	return dest + ":" + strconv.Itoa(port)
 }
