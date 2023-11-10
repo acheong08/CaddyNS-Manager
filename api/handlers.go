@@ -171,7 +171,7 @@ func ServiceEntry(c *gin.Context) {
 
 	case "DELETE":
 		// Remove service entry from storage
-		tx, err := storage.DB.DeleteService(owner.Username, config.Subdomain)
+		tx, err := storage.DB.DeleteService(owner.Username, config.ID)
 		if err != nil {
 			tx.Rollback()
 			c.JSON(500, gin.H{"error": err.Error()})

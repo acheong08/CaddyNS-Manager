@@ -140,9 +140,10 @@
                 ).checked = ${forwarding};
               </script>
             </div>
-            <button type="submit" onclick="checkPostOrPatch();patchSubdomain()">
-              Save
-            </button>
+            <button
+              type="submit"
+              onclick="checkPostOrPatch();patchSubdomain()"
+            ></button>
             <button
               type="submit"
               onclick="method='DELETE';patchSubdomain();"
@@ -154,6 +155,7 @@
         </template>
       </section>
       <script>
+        checkPostOrPatch();
         let method = "POST";
         async function patchSubdomain() {
           // Loop through all the inputs and create a JSON object
@@ -188,18 +190,23 @@
           alert("Something went wrong: " + respData.error);
         }
         function checkPostOrPatch() {
+          button = document.querySelector("#serviceInfo button");
           // Check if value is different from original value
           const subdomain = document.querySelector(
             "#serviceInfo input[name='subdomain']",
           );
-          if (subdomain.value !== subdomain.getAttribute("original-value")) {
-            method = "POST";
+          // Check if ID is set. If not, it's a new subdomain
+          if (document.querySelector("#serviceInfo input[name='id']").value) {
+            // Check if subdomain is different from original value
+            if (subdomain.value !== subdomain.getAttribute("original-value")) {
+              method = "POST";
+            } else {
+              method = "PATCH";
+            }
           } else {
-            method = "PATCH";
-          }
-          if (subdomain.value === "") {
             method = "POST";
           }
+          button.textContent = method;
         }
       </script>
     </main>

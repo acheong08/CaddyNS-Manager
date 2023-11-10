@@ -137,13 +137,13 @@ func (d *database) GetServicesBySubdomain(owner, subdomain string) ([]models.Ser
 	return services, err
 }
 
-func (d *database) DeleteService(owner, subdomain string) (*sql.Tx, error) {
+func (d *database) DeleteService(owner string, id int) (*sql.Tx, error) {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = tx.Exec("DELETE FROM services WHERE owner = ? AND subdomain = ?", owner, subdomain)
+	_, err = tx.Exec("DELETE FROM services WHERE owner = ? AND id = ?", owner, id)
 	if err != nil {
 		return nil, err
 	}
@@ -156,7 +156,7 @@ func (d *database) UpdateService(service models.ServiceEntry) (*sql.Tx, error) {
 		return nil, err
 	}
 
-	_, err = tx.Exec("UPDATE services SET destination = ?, port = ?, dns_record_type = ?, forwarding = ?, rate_limit = ?, limit_by = ? WHERE owner = ? AND subdomain = ?", service.Destination, service.Port, service.DNSRecordType, service.Forwarding, service.RateLimit, service.LimitBy, service.Owner, service.Subdomain)
+	_, err = tx.Exec("UPDATE services SET destination = ?, port = ?, dns_record_type = ?, forwarding = ?, rate_limit = ?, limit_by = ? WHERE owner = ? AND id = ?", service.Destination, service.Port, service.DNSRecordType, service.Forwarding, service.RateLimit, service.LimitBy, service.Owner, service.ID)
 	if err != nil {
 		return nil, err
 	}
