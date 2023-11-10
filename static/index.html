@@ -81,7 +81,7 @@
         <select id="subdomain">
           <option value="<makenew>"></option>
           <template hx-endpoint="/api/service" hx-action="append">
-            <option value="${subdomain}">${subdomain}</option>
+            <option value="${id}">${subdomain}</option>
           </template>
         </select>
       </section>
@@ -94,6 +94,14 @@
           hx-event="onchange, onload"
         >
           <div id="serviceInfo">
+            <label for="id">ID</label>
+            <input
+              type="number"
+              name="id"
+              value="${id}"
+              id="id"
+              disabled
+            /><br />
             <div>
               <label for="subdomain">Subdomain</label>
               <input

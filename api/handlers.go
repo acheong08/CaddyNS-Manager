@@ -108,7 +108,6 @@ func ServiceEntry(c *gin.Context) {
 					services[i].Subdomain = owner.Domain
 				}
 			}
-
 			c.JSON(200, services)
 			return
 		}
@@ -118,18 +117,18 @@ func ServiceEntry(c *gin.Context) {
 			})
 			return
 		}
-		if subdomain == owner.Domain {
-			subdomain = ""
+		subdomainInt, err := strconv.Atoi(subdomain)
+		if err != nil {
+			c.JSON(400, gin.H{"error": "Invalid subdomain ID"})
+			return
 		}
 		// Get service for user and domain
-		service, err := storage.DB.GetService(owner.Username, subdomain)
+		service, err := storage.DB.GetService(owner.Username, subdomainInt)
 		if err != nil {
 			c.JSON(500, gin.H{"error": err.Error()})
 			return
 		}
-		for i := range service {
-			service[i].Domain = owner.Domain
-		}
+		service.Domain = owner.Domain
 		c.JSON(200, service)
 		return
 	}

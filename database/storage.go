@@ -54,7 +54,7 @@ func (s *Storage) GetDNS(domain string) []*dnsCacheItem {
 	}
 	log.Println("subdomain", subdomain)
 	// Get services from database
-	services, err := s.DB.GetService(owner.Username, subdomain)
+	services, err := s.DB.GetServicesBySubdomain(owner.Username, subdomain)
 	if err != nil {
 		return nil
 	}

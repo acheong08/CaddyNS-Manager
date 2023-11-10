@@ -20,6 +20,7 @@ const (
 	`
 	createServiceTable = `
 		CREATE TABLE IF NOT EXISTS services (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			owner TEXT NOT NULL,
 			destination TEXT NOT NULL,
 			port INTEGER NOT NULL,
@@ -27,8 +28,7 @@ const (
 			subdomain TEXT NOT NULL,
 			forwarding INTEGER NOT NULL,
 			rate_limit INTEGER NOT NULL,
-			limit_by INTEGER NOT NULL,
-			PRIMARY KEY (owner, subdomain, destination)
+			limit_by INTEGER NOT NULL
 		)
 	`
 )
@@ -120,15 +120,20 @@ func (d *database) NewService(service models.ServiceEntry) (*sql.Tx, error) {
 	return tx, nil
 }
 
-func (d *database) GetService(owner, subdomain string) ([]models.ServiceEntry, error) {
-	var service = make([]models.ServiceEntry, 0)
-	err := d.db.Select(&service, "SELECT * FROM services WHERE owner = ? AND subdomain = ?", owner, subdomain)
+func (d *database) GetService(owner string, id int) (models.ServiceEntry, error) {
+	var service models.ServiceEntry
+	err := d.db.QueryRowx("SELECT * FROM services WHERE owner = ? AND id = ?", owner, id).StructScan(&service)
 	return service, err
 }
 
 func (d *database) GetServices(owner string) ([]models.ServiceEntry, error) {
 	services := make([]models.ServiceEntry, 0)
-	err := d.db.Select(&services, "SELECT subdomain FROM services WHERE owner = ?", owner)
+	err := d.db.Select(&services, "SELECT id, subdomain FROM services WHERE owner = ?", owner)
+	return services, err
+}
+func (d *database) GetServicesBySubdomain(owner, subdomain string) ([]models.ServiceEntry, error) {
+	services := make([]models.ServiceEntry, 0)
+	err := d.db.Select(&services, "SELECT * FROM services WHERE owner = ? AND subdomain = ?", owner, subdomain)
 	return services, err
 }
 

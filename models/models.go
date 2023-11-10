@@ -17,6 +17,7 @@ const (
 )
 
 type ServiceEntry struct {
+	ID            int     `json:"id" db:"id"`
 	// http://ip:port if forwarding
 	// IP address if not forwarding
 	Owner         string  `json:"owner,omitempty" db:"owner"`
