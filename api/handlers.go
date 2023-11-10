@@ -96,7 +96,7 @@ func ServiceEntry(c *gin.Context) {
 
 	if c.Request.Method == "GET" {
 		subdomain := c.Query("subdomain")
-		if subdomain == "" && subdomain != owner.Domain {
+		if subdomain == "" {
 			// Get all services for user
 			services, err := storage.DB.GetServices(owner.Username)
 			if err != nil {
