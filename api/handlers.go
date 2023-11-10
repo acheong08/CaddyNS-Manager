@@ -64,13 +64,13 @@ func Login(c *gin.Context) {
 	}
 	// Get storage from context
 	storage := c.MustGet("storage").(*database.Storage)
-	err := storage.UserLogin(username, password)
+	err := storage.DB.UserLogin(username, password)
 	if err != nil {
 		c.JSON(401, gin.H{"error": err.Error()})
 		return
 	}
 	// Get user from storage
-	user, err := storage.GetUser(username)
+	user, err := storage.DB.GetUser(username)
 	if err != nil {
 		c.JSON(500, gin.H{"error": err.Error()})
 		return
@@ -98,7 +98,7 @@ func ServiceEntry(c *gin.Context) {
 		subdomain := c.Query("subdomain")
 		if subdomain == "" {
 			// Get all services for user
-			services, err := storage.GetServices(owner.Username)
+			services, err := storage.DB.GetServices(owner.Username)
 			if err != nil {
 				c.JSON(500, gin.H{"error": err.Error()})
 				return
@@ -113,7 +113,7 @@ func ServiceEntry(c *gin.Context) {
 			return
 		}
 		// Get service for user and domain
-		service, err := storage.GetService(owner.Username, subdomain)
+		service, err := storage.DB.GetService(owner.Username, subdomain)
 		if err != nil {
 			c.JSON(500, gin.H{"error": err.Error()})
 			return
@@ -131,13 +131,17 @@ func ServiceEntry(c *gin.Context) {
 	// Prevent users from adding service entries for other users
 	config.Owner = owner.Username
 
-	var err error
 	var message string
 
 	switch c.Request.Method {
 	case "POST":
 		if !config.IsValidFOrPost() {
 			c.JSON(400, gin.H{"error": "Invalid service entry"})
+			return
+		}
+		tx, err := storage.DB.NewService(config)
+		if err != nil {
+			c.JSON(500, gin.H{"error": err.Error()})
 			return
 		}
 
@@ -147,11 +151,12 @@ func ServiceEntry(c *gin.Context) {
 			caddy.RemoveHost(config.Subdomain + "." + owner.Domain)
 			err = caddy.AddConfig(caddy.NewConfig(config.Subdomain+"."+owner.Domain, "http://"+config.Destination+":"+strconv.Itoa(config.Port)))
 			if err != nil {
+				tx.Rollback()
 				c.JSON(500, gin.H{"error": err.Error()})
 				return
 			}
-		} // Add service entry to storage
-		err = storage.NewService(config)
+		}
+		tx.Commit()
 		message = "Service entry added"
 
 	case "DELETE":
@@ -160,15 +165,19 @@ func ServiceEntry(c *gin.Context) {
 			return
 		}
 		// Remove service entry from storage
-		err = storage.DeleteService(owner.Username, config.Subdomain)
+		tx, err := storage.DB.DeleteService(owner.Username, config.Subdomain)
 		if err != nil {
 			c.JSON(500, gin.H{"error": err.Error()})
 			return
 		}
-		// Clear cache
-		storage.ClearCache()
 		// Update caddy
 		err = caddy.RemoveHost(config.Subdomain + "." + owner.Domain)
+		storage.Cache.Clear()
+		if err != nil {
+			tx.Rollback()
+			c.JSON(500, gin.H{"error": err.Error()})
+			return
+		}
 		message = "Service entry removed"
 
 	case "PATCH":
@@ -176,20 +185,24 @@ func ServiceEntry(c *gin.Context) {
 			c.JSON(400, gin.H{"error": "Invalid service entry"})
 			return
 		}
+		tx, err := storage.DB.UpdateService(config)
+		if err != nil {
+			c.JSON(500, gin.H{"error": err.Error()})
+			return
+		}
 		if config.Forwarding {
-
 			err = caddy.Update(caddy.NewConfig(
 				config.Subdomain+"."+owner.Domain,
 				"http://"+config.Destination+":"+strconv.Itoa(config.Port),
 			))
 			if err != nil {
+				tx.Rollback()
 				c.JSON(500, gin.H{"error": err.Error()})
 				return
 			}
 		}
-		storage.ClearCache()
-		err = storage.UpdateService(config)
-
+		storage.Cache.Clear()
+		tx.Commit()
 		message = "Service entry updated"
 
 	default:
@@ -197,10 +210,7 @@ func ServiceEntry(c *gin.Context) {
 		return
 
 	}
-	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
-		return
-	}
+
 	c.JSON(200, gin.H{"success": message})
 	return
 }

@@ -1,6 +1,7 @@
 package database
 
 import (
+	"database/sql"
 	"log"
 
 	"github.com/acheong08/nameserver/models"
@@ -106,24 +107,17 @@ func (d *database) GetDomainOwner(domain string) (models.User, error) {
 	return user, err
 }
 
-func (d *database) NewService(service models.ServiceEntry) error {
+func (d *database) NewService(service models.ServiceEntry) (*sql.Tx, error) {
 	tx, err := d.db.Begin()
 	if err != nil {
-		return err
+		return nil, err
 	}
-	defer func() {
-		if err != nil {
-			log.Printf("Rolling back transaction due to %s\n", err.Error())
-			tx.Rollback()
-		} else {
-			tx.Commit()
-		}
-	}()
+
 	_, err = tx.Exec("INSERT INTO services (owner, destination, port, dns_record_type, subdomain, forwarding, rate_limit, limit_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", service.Owner, service.Destination, service.Port, service.DNSRecordType, service.Subdomain, service.Forwarding, service.RateLimit, service.LimitBy)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return tx.Commit()
+	return tx, nil
 }
 
 func (d *database) GetService(owner, subdomain string) (models.ServiceEntry, error) {
@@ -138,42 +132,28 @@ func (d *database) GetServices(owner string) ([]models.ServiceEntry, error) {
 	return services, err
 }
 
-func (d *database) DeleteService(owner, subdomain string) error {
+func (d *database) DeleteService(owner, subdomain string) (*sql.Tx, error) {
 	tx, err := d.db.Begin()
 	if err != nil {
-		return err
+		return nil, err
 	}
-	defer func() {
-		if err != nil {
-			log.Printf("Rolling back transaction due to %s\n", err.Error())
-			tx.Rollback()
-		} else {
-			tx.Commit()
-		}
-	}()
+
 	_, err = tx.Exec("DELETE FROM services WHERE owner = ? AND subdomain = ?", owner, subdomain)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return tx.Commit()
+	return tx, nil
 }
 
-func (d *database) UpdateService(service models.ServiceEntry) error {
+func (d *database) UpdateService(service models.ServiceEntry) (*sql.Tx, error) {
 	tx, err := d.db.Begin()
 	if err != nil {
-		return err
+		return nil, err
 	}
-	defer func() {
-		if err != nil {
-			log.Printf("Rolling back transaction due to %s\n", err.Error())
-			tx.Rollback()
-		} else {
-			tx.Commit()
-		}
-	}()
+
 	_, err = tx.Exec("UPDATE services SET destination = ?, port = ?, dns_record_type = ?, forwarding = ?, rate_limit = ?, limit_by = ? WHERE owner = ? AND subdomain = ?", service.Destination, service.Port, service.DNSRecordType, service.Forwarding, service.RateLimit, service.LimitBy, service.Owner, service.Subdomain)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return tx.Commit()
+	return tx, nil
 }
