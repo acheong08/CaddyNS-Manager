@@ -101,7 +101,7 @@
                 name="subdomain"
                 value="${subdomain}"
                 original-value="${subdomain}"
-                onchange="postIt()"
+                onchange="checkPostOrPatch()"
               />
               <span>.${domain}</span>
             </div>
@@ -132,10 +132,12 @@
                 ).checked = ${forwarding};
               </script>
             </div>
-            <button type="submit" onclick="patchSubdomain()">Save</button>
+            <button type="submit" onclick="checkPostOrPatch();patchSubdomain()">
+              Save
+            </button>
             <button
               type="submit"
-              onclick="method='DELETE';patchSubdomain()"
+              onclick="method='DELETE';patchSubdomain();"
               style="color: red"
             >
               Delete
@@ -144,7 +146,7 @@
         </template>
       </section>
       <script>
-        let method = "PATCH";
+        let method = "POST";
         async function patchSubdomain() {
           // Loop through all the inputs and create a JSON object
           const inputs = document.querySelectorAll("#serviceInfo input");
@@ -177,21 +179,18 @@
           }
           alert("Something went wrong: " + respData.error);
         }
-        function postIt() {
+        function checkPostOrPatch() {
           // Check if value is different from original value
           const subdomain = document.querySelector(
             "#serviceInfo input[name='subdomain']",
           );
           if (subdomain.value !== subdomain.getAttribute("original-value")) {
-            // Set button to "Create"
-            const button = document.querySelector("#serviceInfo button");
-            button.textContent = "Create";
             method = "POST";
           } else {
-            // Set button to "Save"
-            const button = document.querySelector("#serviceInfo button");
-            button.textContent = "Save";
             method = "PATCH";
+          }
+          if (subdomain.value === "") {
+            method = "POST";
           }
         }
       </script>

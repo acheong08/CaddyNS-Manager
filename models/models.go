@@ -32,7 +32,7 @@ type ServiceEntry struct {
 
 func (se *ServiceEntry) IsValidFOrPost() bool {
 	// Check if all required fields are set
-	if se.Destination == "" || se.Subdomain == "" {
+	if se.Destination == "" {
 		return false
 	}
 	if !se.Forwarding && se.DNSRecordType == "" {

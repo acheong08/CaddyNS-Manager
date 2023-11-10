@@ -40,28 +40,32 @@ func (s *Storage) GetDNS(domain string) []*dnsCacheItem {
 	}
 	// Get the root domain
 	rootDomain := domainList[len(domainList)-2] + "." + domainList[len(domainList)-1]
-	log.Printf("Root domain: %s\n", rootDomain)
 	// Get the owner of the domain
 	owner, err := s.DB.GetDomainOwner(rootDomain)
 	if err != nil {
 		return nil
 	}
-	if len(domain) < len(rootDomain)+2 {
-	 		return nil
-	}
 	// Get the subdomain (remove root domain)
-	subdomain := domain[:len(domain)-len(rootDomain)-1]
-	// Get service from database
-	service, err := s.DB.GetService(owner.Username, subdomain)
+	var subdomain string
+	if len(domain) == len(rootDomain) {
+		subdomain = ""
+	} else {
+		subdomain = domain[:len(domain)-len(rootDomain)-1]
+	}
+	log.Println("subdomain", subdomain)
+	// Get services from database
+	services, err := s.DB.GetService(owner.Username, subdomain)
 	if err != nil {
 		return nil
 	}
+	for _, service := range services {
 	if service.Forwarding {
 		// If it is, add it to the cache
 		s.Cache.Set(domain, s.publicIP, service.DNSRecordType)
 	} else {
 		// If forwarding is not enabled, directly return the destination
 		s.Cache.Set(domain, service.Destination, service.DNSRecordType)
+	}
 	}
 	items, ok = s.Cache.Get(domain)
 	if !ok {

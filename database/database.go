@@ -28,7 +28,7 @@ const (
 			forwarding INTEGER NOT NULL,
 			rate_limit INTEGER NOT NULL,
 			limit_by INTEGER NOT NULL,
-			PRIMARY KEY (owner, subdomain)
+			PRIMARY KEY (owner, subdomain, destination)
 		)
 	`
 )
@@ -120,9 +120,9 @@ func (d *database) NewService(service models.ServiceEntry) (*sql.Tx, error) {
 	return tx, nil
 }
 
-func (d *database) GetService(owner, subdomain string) (models.ServiceEntry, error) {
-	var service models.ServiceEntry
-	err := d.db.QueryRowx("SELECT * FROM services WHERE owner = ? AND subdomain = ?", owner, subdomain).StructScan(&service)
+func (d *database) GetService(owner, subdomain string) ([]models.ServiceEntry, error) {
+	var service = make([]models.ServiceEntry, 0)
+	err := d.db.Select(&service, "SELECT * FROM services WHERE owner = ? AND subdomain = ?", owner, subdomain)
 	return service, err
 }
 

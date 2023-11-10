@@ -96,13 +96,19 @@ func ServiceEntry(c *gin.Context) {
 
 	if c.Request.Method == "GET" {
 		subdomain := c.Query("subdomain")
-		if subdomain == "" {
+		if subdomain == "" && subdomain != owner.Domain {
 			// Get all services for user
 			services, err := storage.DB.GetServices(owner.Username)
 			if err != nil {
 				c.JSON(500, gin.H{"error": err.Error()})
 				return
 			}
+			for i := range services {
+				if services[i].Subdomain == "" {
+					services[i].Subdomain = owner.Domain
+				}
+			}
+
 			c.JSON(200, services)
 			return
 		}
@@ -112,13 +118,18 @@ func ServiceEntry(c *gin.Context) {
 			})
 			return
 		}
+		if subdomain == owner.Domain {
+			subdomain = ""
+		}
 		// Get service for user and domain
 		service, err := storage.DB.GetService(owner.Username, subdomain)
 		if err != nil {
 			c.JSON(500, gin.H{"error": err.Error()})
 			return
 		}
-		service.Domain = owner.Domain
+		for i := range service {
+			service[i].Domain = owner.Domain
+		}
 		c.JSON(200, service)
 		return
 	}
@@ -160,24 +171,25 @@ func ServiceEntry(c *gin.Context) {
 		message = "Service entry added"
 
 	case "DELETE":
-		if config.Subdomain == "" {
-			c.JSON(400, gin.H{"error": "Subdomain required"})
-			return
-		}
 		// Remove service entry from storage
 		tx, err := storage.DB.DeleteService(owner.Username, config.Subdomain)
-		if err != nil {
-			c.JSON(500, gin.H{"error": err.Error()})
-			return
-		}
-		// Update caddy
-		err = caddy.RemoveHost(config.Subdomain + "." + owner.Domain)
-		storage.Cache.Clear()
 		if err != nil {
 			tx.Rollback()
 			c.JSON(500, gin.H{"error": err.Error()})
 			return
 		}
+		if config.Forwarding {
+			// Update caddy
+			err = caddy.RemoveHost(config.Subdomain + "." + owner.Domain)
+
+			if err != nil {
+				tx.Rollback()
+				c.JSON(500, gin.H{"error": err.Error()})
+				return
+			}
+		}
+		storage.Cache.Clear()
+		tx.Commit()
 		message = "Service entry removed"
 
 	case "PATCH":
