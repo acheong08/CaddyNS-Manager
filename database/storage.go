@@ -1,7 +1,6 @@
 package database
 
 import (
-	"log"
 	"strings"
 )
 
@@ -52,7 +51,6 @@ func (s *Storage) GetDNS(domain string) []*dnsCacheItem {
 	} else {
 		subdomain = domain[:len(domain)-len(rootDomain)-1]
 	}
-	log.Println("subdomain", subdomain)
 	// Get services from database
 	services, err := s.DB.GetServicesBySubdomain(owner.Username, subdomain)
 	if err != nil {
