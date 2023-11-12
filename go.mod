@@ -1,4 +1,4 @@
-module github.com/acheong08/nameserver
+module nameserver
 
 go 1.21.3
 
