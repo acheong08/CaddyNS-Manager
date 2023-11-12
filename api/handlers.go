@@ -167,6 +167,7 @@ func ServiceEntry(c *gin.Context) {
 			}
 		}
 		tx.Commit()
+		storage.Cache.Delete(config.Subdomain + "." + owner.Domain)
 		message = "Service entry added"
 
 	case "DELETE":
@@ -187,8 +188,8 @@ func ServiceEntry(c *gin.Context) {
 				return
 			}
 		}
-		storage.Cache.Clear()
 		tx.Commit()
+		storage.Cache.Delete(config.Subdomain + "." + owner.Domain)
 		message = "Service entry removed"
 
 	case "PATCH":
@@ -212,8 +213,8 @@ func ServiceEntry(c *gin.Context) {
 				return
 			}
 		}
-		storage.Cache.Clear()
 		tx.Commit()
+		storage.Cache.Delete(config.Subdomain + "." + owner.Domain)
 		message = "Service entry updated"
 
 	default:

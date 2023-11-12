@@ -1,6 +1,7 @@
 package database
 
 import (
+	"log"
 	"strings"
 )
 
@@ -26,6 +27,7 @@ func (s *Storage) GetDNS(domain string) []*dnsCacheItem {
 	if domain[len(domain)-1] == '.' {
 		domain = domain[:len(domain)-1]
 	}
+	domain = strings.ToLower(domain)
 	// Check if the domain is in the cache
 	items, ok := s.Cache.Get(domain)
 	if ok {
@@ -40,6 +42,7 @@ func (s *Storage) GetDNS(domain string) []*dnsCacheItem {
 	// Get the root domain
 	rootDomain := domainList[len(domainList)-2] + "." + domainList[len(domainList)-1]
 	// Get the owner of the domain
+	log.Println("DB Accessed! This should not happen often.", domain)
 	owner, err := s.DB.GetDomainOwner(rootDomain)
 	if err != nil {
 		return nil
@@ -53,17 +56,19 @@ func (s *Storage) GetDNS(domain string) []*dnsCacheItem {
 	}
 	// Get services from database
 	services, err := s.DB.GetServicesBySubdomain(owner.Username, subdomain)
-	if err != nil {
+	if err != nil || len(services) == 0 {
+		// Cache empty
+		s.Cache.SetEmpty(domain)
 		return nil
 	}
 	for _, service := range services {
-	if service.Forwarding {
-		// If it is, add it to the cache
-		s.Cache.Set(domain, s.publicIP, service.DNSRecordType)
-	} else {
-		// If forwarding is not enabled, directly return the destination
-		s.Cache.Set(domain, service.Destination, service.DNSRecordType)
-	}
+		if service.Forwarding {
+			// If it is, add it to the cache
+			s.Cache.Set(domain, s.publicIP, service.DNSRecordType)
+		} else {
+			// If forwarding is not enabled, directly return the destination
+			s.Cache.Set(domain, service.Destination, service.DNSRecordType)
+		}
 	}
 	items, ok = s.Cache.Get(domain)
 	if !ok {

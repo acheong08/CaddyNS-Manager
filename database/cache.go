@@ -51,6 +51,12 @@ func (c *dnsCache) Set(domain string, dest string, recordType string) {
 	c.lock.Unlock()
 }
 
+func (c *dnsCache) SetEmpty(domain string) {
+	c.lock.Lock()
+	c.Items[domain] = &dnsCacheList{0, make([]*dnsCacheItem, 0)}
+	c.lock.Unlock()
+}
+
 func (c *dnsCache) Get(domain string) ([]*dnsCacheItem, bool) {
 	c.lock.RLock()
 	item, ok := c.Items[domain]
