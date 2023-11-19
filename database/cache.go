@@ -13,15 +13,16 @@ type dnsCacheItem struct {
 }
 
 type dnsCacheList struct {
-	Hits  int
-	Items []*dnsCacheItem
+	Items []dnsCacheItem
 }
 
 func (l *dnsCacheList) Add(item dnsCacheItem) {
-	if l.Items == nil {
-		l.Items = make([]*dnsCacheItem, 0)
+	if l.Items != nil {
+		l.Items = append(l.Items, item)
+
+	} else {
+		l.Items = make([]dnsCacheItem, 0)
 	}
-	l.Items = append(l.Items, &item)
 }
 
 func (l *dnsCacheList) Remove(index int) {
@@ -29,7 +30,7 @@ func (l *dnsCacheList) Remove(index int) {
 }
 
 func (l *dnsCacheList) Clear() {
-	l.Items = make([]*dnsCacheItem, 0)
+	l.Items = make([]dnsCacheItem, 0)
 }
 
 type dnsCache struct {
@@ -44,27 +45,27 @@ func newCache() *dnsCache {
 func (c *dnsCache) Set(domain string, dest string, recordType string) {
 	c.lock.Lock()
 	if _, ok := c.Items[domain]; !ok {
-		c.Items[domain] = &dnsCacheList{0, make([]*dnsCacheItem, 0)}
+		c.Items[domain] = &dnsCacheList{make([]dnsCacheItem, 0)}
 	}
-	c.Items[domain].Add(dnsCacheItem{domain, dest, recordType, time.Now()})
-	c.Items[domain].Hits++
+	if c.Items[domain] != nil {
+		c.Items[domain].Add(dnsCacheItem{domain, dest, recordType, time.Now()})
+	}
 	c.lock.Unlock()
 }
 
 func (c *dnsCache) SetEmpty(domain string) {
 	c.lock.Lock()
-	c.Items[domain] = &dnsCacheList{0, make([]*dnsCacheItem, 0)}
+	c.Items[domain] = &dnsCacheList{make([]dnsCacheItem, 0)}
 	c.lock.Unlock()
 }
 
-func (c *dnsCache) Get(domain string) ([]*dnsCacheItem, bool) {
+func (c *dnsCache) Get(domain string) ([]dnsCacheItem, bool) {
 	c.lock.RLock()
 	item, ok := c.Items[domain]
 	if !ok {
 		c.lock.RUnlock()
 		return nil, false
 	}
-	item.Hits++
 	c.lock.RUnlock()
 	return item.Items, true
 }

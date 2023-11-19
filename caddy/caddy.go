@@ -100,7 +100,11 @@ func ResetConfig(configs []Config) error {
 	if err != nil {
 		return err
 	}
+	if resp == nil {
+		return fmt.Errorf("Caddy returned nil response")
+	}
 	defer resp.Body.Close()
+
 	if resp.StatusCode != 200 {
 		return fmt.Errorf("Caddy returned status code %d", resp.StatusCode)
 	}
@@ -121,7 +125,11 @@ func AddConfig(config Config) error {
 	if err != nil {
 		return err
 	}
+	if resp == nil {
+		return fmt.Errorf("Caddy returned nil response")
+	}
 	defer resp.Body.Close()
+
 	if resp.StatusCode != 200 {
 		return fmt.Errorf("Caddy returned status code %d", resp.StatusCode)
 	}
@@ -135,6 +143,9 @@ func Update(config Config) error {
 	resp, err := http.DefaultClient.Get(url)
 	if err != nil {
 		return err
+	}
+	if resp == nil {
+		return fmt.Errorf("Caddy returned nil response")
 	}
 	defer resp.Body.Close()
 
@@ -159,6 +170,9 @@ func Update(config Config) error {
 					if err != nil {
 						return err
 					}
+					if resp == nil {
+						return fmt.Errorf("Caddy returned nil response")
+					}
 					defer resp.Body.Close()
 					if resp.StatusCode != 200 {
 						return fmt.Errorf("Caddy returned status code %d", resp.StatusCode)
@@ -182,6 +196,9 @@ func RemoveHost(domain string) error {
 	if err != nil {
 		return err
 	}
+	if resp == nil {
+		return fmt.Errorf("Caddy returned nil response")
+	}
 	defer resp.Body.Close()
 
 	var routes []Config
@@ -204,6 +221,9 @@ func RemoveHost(domain string) error {
 					resp, err := http.DefaultClient.Do(req)
 					if err != nil {
 						return err
+					}
+					if resp == nil {
+						return fmt.Errorf("Caddy returned nil response")
 					}
 					defer resp.Body.Close()
 					if resp.StatusCode != 200 {

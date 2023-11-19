@@ -23,7 +23,7 @@ func NewStorage(publicIP string) (*Storage, error) {
 	}, nil
 }
 
-func (s *Storage) GetDNS(domain string) []*dnsCacheItem {
+func (s *Storage) GetDNS(domain string) []dnsCacheItem {
 	if domain[len(domain)-1] == '.' {
 		domain = domain[:len(domain)-1]
 	}
