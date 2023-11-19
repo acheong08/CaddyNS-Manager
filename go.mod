@@ -1,6 +1,6 @@
-module nameserver
+module github.com/acheong08/nameserver
 
-go 1.21.3
+go 1.21
 
 require (
 	github.com/acheong08/squealx v0.0.0-20231103214807-9a3e284b844d
