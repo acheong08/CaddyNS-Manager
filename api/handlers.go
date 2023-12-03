@@ -3,6 +3,7 @@ package api
 import (
 	"crypto/rand"
 	"strconv"
+	"strings"
 
 	"github.com/acheong08/nameserver/caddy"
 	"github.com/acheong08/nameserver/database"
@@ -140,7 +141,7 @@ func ServiceEntry(c *gin.Context) {
 
 	// Prevent users from adding service entries for other users
 	config.Owner = owner.Username
-
+	config.Subdomain = strings.ToLower(config.Subdomain)
 	var message string
 
 	switch c.Request.Method {
